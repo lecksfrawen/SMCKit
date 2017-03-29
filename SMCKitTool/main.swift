@@ -174,7 +174,6 @@ func printTemperatureInformation(known: Bool = true) {
     for sensor in sensors {
         let padding = String(repeating: String(" "), count: longestSensorNameCount -
             sensor.name.characters.count)
-
         let smcKey  = CLIDisplayKeysOption.wasSet ? "(\(sensor.code.toString()))" : ""
         print("\(sensor.name + padding)   \(smcKey)  ", terminator: "")
 
@@ -244,7 +243,6 @@ func printPowerInformation() {
 
 func printMiscInformation() {
     print("-- Misc --")
-
     let ODDStatus: Bool
     do {
         ODDStatus = try SMCKit.isOpticalDiskDriveFull()
@@ -284,7 +282,6 @@ func setMinFanSpeed(fanId: Int, fanSpeed: Int) {
         let currentSpeed = try SMCKit.fanCurrentSpeed(fanId)
 
         try SMCKit.fanSetMinSpeed(fanId, speed: fanSpeed)
-
         print("Min fan speed set successfully")
         print("[id \(fan.id)] \(fan.name)")
         print("\tMin (Previous):  \(fan.minSpeed) RPM")
