@@ -172,9 +172,8 @@ func printTemperatureInformation(known: Bool = true) {
 
 
     for sensor in sensors {
-        
-        let padding = String(repeating: String(" "), count: (longestSensorNameCount-sensor.name.characters.count))
-        
+        let padding = String(repeating: String(" "), count: longestSensorNameCount -
+            sensor.name.characters.count)
         let smcKey  = CLIDisplayKeysOption.wasSet ? "(\(sensor.code.toString()))" : ""
         print("\(sensor.name + padding)   \(smcKey)  ", terminator: "")
 
@@ -247,7 +246,7 @@ func printMiscInformation() {
     let ODDStatus: Bool
     do {
         ODDStatus = try SMCKit.isOpticalDiskDriveFull()
-    } catch SMCKit.SMCError.keyNotFound{ ODDStatus = false }
+    } catch SMCKit.SMCError.keyNotFound { ODDStatus = false }
       catch {
         print(error)
         return
