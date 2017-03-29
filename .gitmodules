@@ -1,4 +1,4 @@
 [submodule "SMCKitTool/lib/CommandLine"]
-	path = SMCKitTool/lib/CommandLin
-	branch = master
+	path = SMCKitTool/lib/CommandLine
 	url = ssh://git@github.com/videro/CommandLine.git
+	branch = master
