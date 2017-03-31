@@ -671,7 +671,7 @@ extension SMCKit {
 /// source driver for the SMC.
 
 //dlouven -> convert this to class for use in objective c
-@objc(SMCKit)
+@objc
 public class SMCKit : NSObject{
     
     public enum SMCError: Error {
