@@ -16,7 +16,7 @@ import Foundation
 @objc
 public class SMCKit : NSObject{
     
-    public enum SMCError: Error {
+    public enum SMCError: Int {
         
         /// AppleSMC driver not found
         case driverNotFound
@@ -25,7 +25,7 @@ public class SMCKit : NSObject{
         case failedToOpen
         
         /// This SMC key is not valid on this machine
-        case keyNotFound(code: String)
+        case keyNotFound
         
         /// Requires root privileges
         case notPrivileged
@@ -37,7 +37,7 @@ public class SMCKit : NSObject{
         ///
         /// - parameter kIOReturn: I/O Kit error code
         /// - parameter SMCResult: SMC specific return code
-        case unknown(kIOReturn: kern_return_t, SMCResult: UInt8)
+        case unknown
     }
     
     /// Connection to the SMC driver
@@ -45,27 +45,27 @@ public class SMCKit : NSObject{
     
     /// Open connection to the SMC driver. This must be done first before any
     /// other calls
-    public static func open() throws {
+    public func open() throws {
         let service = IOServiceGetMatchingService(kIOMasterPortDefault,
                                                   IOServiceMatching("AppleSMC"))
         
-        if service == 0 { throw SMCError.driverNotFound }
+        //if service == 0 //{ return SMCError.driverNotFound }
         
         let result = IOServiceOpen(service, mach_task_self_, 0,
                                    &SMCKit.connection)
         IOObjectRelease(service)
         
-        if result != kIOReturnSuccess { throw SMCError.failedToOpen }
+        //if result != kIOReturnSuccess { throw SMCError.failedToOpen }
     }
     
     /// Close connection to the SMC driver
-    public static func close() -> Bool {
+    public func close() -> Bool {
         let result = IOServiceClose(SMCKit.connection)
         return result == kIOReturnSuccess ? true : false
     }
     
     /// Get information about a key
-    public static func keyInformation(_ key: FourCharCode) throws -> DataType {
+    public func keyInformation(_ key: FourCharCode) throws -> DataType {
         var inputStruct = SMCParamStruct()
         
         inputStruct.key = key
@@ -78,7 +78,7 @@ public class SMCKit : NSObject{
     }
     
     /// Get information about the key at index
-    public static func keyInformationAtIndex(_ index: Int) throws ->
+    public func keyInformationAtIndex(_ index: Int) throws ->
         FourCharCode {
             var inputStruct = SMCParamStruct()
             
@@ -91,7 +91,7 @@ public class SMCKit : NSObject{
     }
     
     /// Read data of a key
-    public static func readData(_ key: SMCKey) throws -> SMCBytes {
+    public func readData(_ key: SMCKey) throws -> SMCBytes {
         var inputStruct = SMCParamStruct()
         
         inputStruct.key = key.code
@@ -104,7 +104,7 @@ public class SMCKit : NSObject{
     }
     
     /// Write data for a key
-    public static func writeData(_ key: SMCKey, data: SMCBytes) throws {
+    public func writeData(_ key: SMCKey, data: SMCBytes) throws {
         var inputStruct = SMCParamStruct()
         
         inputStruct.key = key.code
@@ -116,7 +116,7 @@ public class SMCKit : NSObject{
     }
     
     /// Make an actual call to the SMC driver
-    public static func callDriver(_ inputStruct: inout SMCParamStruct,
+    public func callDriver(_ inputStruct: inout SMCParamStruct,
                                   selector: SMCParamStruct.Selector = .kSMCHandleYPCEvent)
         throws -> SMCParamStruct {
             assert(MemoryLayout<SMCParamStruct>.stride == 80, "SMCParamStruct size is != 80")
@@ -135,18 +135,19 @@ public class SMCKit : NSObject{
             switch (result, outputStruct.result) {
             case (kIOReturnSuccess, SMCParamStruct.Result.kSMCSuccess.rawValue):
                 return outputStruct
-            case (kIOReturnSuccess, SMCParamStruct.Result.kSMCKeyNotFound.rawValue):
-                throw SMCError.keyNotFound(code: inputStruct.key.toString())
-            case (kIOReturnNotPrivileged, _):
-                throw SMCError.notPrivileged
+           // case (kIOReturnSuccess, SMCParamStruct.Result.kSMCKeyNotFound.rawValue):
+                //throw SMCError.keyNotFound(code: inputStruct.key.toString())
+            //case (kIOReturnNotPrivileged, _):
+                //throw SMCError.notPrivileged
             default:
-                throw SMCError.unknown(kIOReturn: result,
-                                       SMCResult: outputStruct.result)
+                return outputStruct;
+                //throw SMCError.unknown(kIOReturn: result,
+                 //                      SMCResult: outputStruct.result)
             }
     }
     
     /// Get all valid SMC keys for this machine
-    public static func allKeys() throws -> [SMCKey] {
+    public func allKeys() throws -> [SMCKey] {
         let count = try keyCount()
         var keys = [SMCKey]()
         
@@ -160,7 +161,7 @@ public class SMCKit : NSObject{
     }
     
     /// Get the number of valid SMC keys for this machine
-    public static func keyCount() throws -> Int {
+    public func keyCount() throws -> Int {
         let key = SMCKey(code: FourCharCode(fromStaticString: "#KEY"),
                          info: DataTypes.UInt32)
         
@@ -169,7 +170,7 @@ public class SMCKit : NSObject{
     }
     
     /// Is this key valid on this machine?
-    public static func isKeyFound(_ code: FourCharCode) throws -> Bool {
+    public func isKeyFound(_ code: FourCharCode) throws -> Bool {
         do {
             try keyInformation(code)
         } catch SMCError.keyNotFound { return false }
@@ -177,7 +178,7 @@ public class SMCKit : NSObject{
         return true
     }
     
-    public static func allKnownTemperatureSensors() throws ->
+    public func allKnownTemperatureSensors() throws ->
         [TemperatureSensor] {
             var sensors = [TemperatureSensor]()
             
@@ -188,7 +189,7 @@ public class SMCKit : NSObject{
             return sensors
     }
     
-    public static func allUnknownTemperatureSensors() throws -> [TemperatureSensor] {
+    public func allUnknownTemperatureSensors() throws -> [TemperatureSensor] {
         let keys = try allKeys()
         
         return keys.filter { $0.code.toString().hasPrefix("T") &&
@@ -198,7 +199,7 @@ public class SMCKit : NSObject{
     }
     
     /// Get current temperature of a sensor
-    public static func temperature(_ sensorCode: FourCharCode,
+    public func temperature(_ sensorCode: FourCharCode,
                                    unit: TemperatureUnit = .celius) throws -> Double {
         let data = try readData(SMCKey(code: sensorCode, info: DataTypes.SP78))
         
@@ -214,18 +215,18 @@ public class SMCKit : NSObject{
         }
     }
     
-    public static func allFans() throws -> [Fan] {
+    public func allFans() throws -> [Fan] {
         let count = try fanCount()
         var fans = [Fan]()
         
         for i in 0 ..< count {
-            fans.append(try SMCKit.fan(i))
+            fans.append(try fan(i))
         }
         
         return fans
     }
     
-    public static func fan(_ id: Int) throws -> Fan {
+    public func fan(_ id: Int) throws -> Fan {
         let name = try fanName(id)
         let minSpeed = try fanMinSpeed(id)
         let maxSpeed = try fanMaxSpeed(id)
@@ -234,7 +235,7 @@ public class SMCKit : NSObject{
     
     /// Number of fans this machine has. All Intel based Macs, except for the
     /// 2015 MacBook (8,1), have at least 1
-    public static func fanCount() throws -> Int {
+    public func fanCount() throws -> Int {
         let key = SMCKey(code: FourCharCode(fromStaticString: "FNum"),
                          info: DataTypes.UInt8)
         
@@ -242,7 +243,7 @@ public class SMCKit : NSObject{
         return Int(data.0)
     }
     
-    public static func fanName(_ id: Int) throws -> String {
+    public func fanName(_ id: Int) throws -> String {
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)ID"),
                          info: DataTypes.FDS)
         let data = try readData(key)
@@ -268,7 +269,7 @@ public class SMCKit : NSObject{
         return name.trimmingCharacters(in: characterSet)
     }
     
-    public static func fanCurrentSpeed(_ id: Int) throws -> Int {
+    public func fanCurrentSpeed(_ id: Int) throws -> Int {
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)Ac"),
                          info: DataTypes.FPE2)
         
@@ -276,7 +277,7 @@ public class SMCKit : NSObject{
         return Int(fromFPE2: (data.0, data.1))
     }
     
-    public static func fanMinSpeed(_ id: Int) throws -> Int {
+    public func fanMinSpeed(_ id: Int) throws -> Int {
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mn"),
                          info: DataTypes.FPE2)
         
@@ -284,7 +285,7 @@ public class SMCKit : NSObject{
         return Int(fromFPE2: (data.0, data.1))
     }
     
-    public static func fanMaxSpeed(_ id: Int) throws -> Int {
+    public func fanMaxSpeed(_ id: Int) throws -> Int {
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mx"),
                          info: DataTypes.FPE2)
         
@@ -298,9 +299,9 @@ public class SMCKit : NSObject{
     /// WARNING: You are playing with hardware here, BE CAREFUL.
     ///
     /// - Throws: Of note, `SMCKit.SMCError`'s `UnsafeFanSpeed` and `NotPrivileged`
-    public static func fanSetMinSpeed(_ id: Int, speed: Int) throws {
-        let maxSpeed = try fanMaxSpeed(id)
-        if speed <= 0 || speed > maxSpeed { throw SMCError.unsafeFanSpeed }
+    public func fanSetMinSpeed(_ id: Int, speed: Int) throws {
+        _ = try fanMaxSpeed(id)
+        //if speed <= 0 || speed > maxSpeed { throw SMCError.unsafeFanSpeed }
         
         let data = speed.toFPE2()
         let bytes = (data.0, data.1, UInt8(0), UInt8(0), UInt8(0), UInt8(0),
@@ -316,7 +317,7 @@ public class SMCKit : NSObject{
         try writeData(key, data: bytes)
     }
 
-    public static func isOpticalDiskDriveFull() throws -> Bool {
+    public func isOpticalDiskDriveFull() throws -> Bool {
         // TODO: Should we catch key not found? That just means the machine
         // doesn't have an ODD. Returning false though is not fully correct.
         // Maybe we could throw a no ODD error instead?
@@ -327,7 +328,7 @@ public class SMCKit : NSObject{
         return Bool(fromByte: data.0)
     }
     
-    public static func batteryInformation() throws -> batteryInfo {
+    public func batteryInformation() throws -> batteryInfo {
         let batteryCountKey =
             SMCKey(code: FourCharCode(fromStaticString: "BNum"),
                    info: DataTypes.UInt8)
