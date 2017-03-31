@@ -170,20 +170,20 @@ public class SMCKit : NSObject{
     }
     
     /// Is this key valid on this machine?
-    public func isKeyFound(_ code: FourCharCode) throws -> Bool {
+    public func isKeyFound(_ code: FourCharCode) -> Bool {
         do {
             try keyInformation(code)
-        } catch SMCError.keyNotFound { return false }
+        } catch { return false }
         
         return true
     }
     
-    public func allKnownTemperatureSensors() throws ->
+    public func allKnownTemperatureSensors() ->
         [TemperatureSensor] {
             var sensors = [TemperatureSensor]()
             
             for sensor in TemperatureSensors.all.values {
-                if try isKeyFound(sensor.code) { sensors.append(sensor) }
+                if isKeyFound(sensor.code) { sensors.append(sensor) }
             }
             
             return sensors
