@@ -277,141 +277,6 @@ public func ==(lhs: DataType, rhs: DataType) -> Bool {
     return lhs.type == rhs.type && lhs.size == rhs.size
 }
 
-/// Apple System Management Controller (SMC) user-space client for Intel-based
-/// Macs. Works by talking to the AppleSMC.kext (kernel extension), the closed
-/// source driver for the SMC.
-public struct SMCKit {
-
-    public enum SMCError: Error {
-
-        /// AppleSMC driver not found
-        case driverNotFound
-
-        /// Failed to open a connection to the AppleSMC driver
-        case failedToOpen
-
-        /// This SMC key is not valid on this machine
-        case keyNotFound(code: String)
-
-        /// Requires root privileges
-        case notPrivileged
-
-        /// Fan speed must be > 0 && <= fanMaxSpeed
-        case unsafeFanSpeed
-
-        /// https://developer.apple.com/library/mac/qa/qa1075/_index.html
-        ///
-        /// - parameter kIOReturn: I/O Kit error code
-        /// - parameter SMCResult: SMC specific return code
-        case unknown(kIOReturn: kern_return_t, SMCResult: UInt8)
-    }
-
-    /// Connection to the SMC driver
-    fileprivate static var connection: io_connect_t = 0
-
-    /// Open connection to the SMC driver. This must be done first before any
-    /// other calls
-    public static func open() throws {
-        let service = IOServiceGetMatchingService(kIOMasterPortDefault,
-                                                  IOServiceMatching("AppleSMC"))
-
-        if service == 0 { throw SMCError.driverNotFound }
-
-        let result = IOServiceOpen(service, mach_task_self_, 0,
-                                   &SMCKit.connection)
-        IOObjectRelease(service)
-
-        if result != kIOReturnSuccess { throw SMCError.failedToOpen }
-    }
-
-    /// Close connection to the SMC driver
-    public static func close() -> Bool {
-        let result = IOServiceClose(SMCKit.connection)
-        return result == kIOReturnSuccess ? true : false
-    }
-
-    /// Get information about a key
-    public static func keyInformation(_ key: FourCharCode) throws -> DataType {
-        var inputStruct = SMCParamStruct()
-
-        inputStruct.key = key
-        inputStruct.data8 = SMCParamStruct.Selector.kSMCGetKeyInfo.rawValue
-
-        let outputStruct = try callDriver(&inputStruct)
-
-        return DataType(type: outputStruct.keyInfo.dataType,
-                        size: outputStruct.keyInfo.dataSize)
-    }
-
-    /// Get information about the key at index
-    public static func keyInformationAtIndex(_ index: Int) throws ->
-                                                                  FourCharCode {
-        var inputStruct = SMCParamStruct()
-
-        inputStruct.data8 = SMCParamStruct.Selector.kSMCGetKeyFromIndex.rawValue
-        inputStruct.data32 = UInt32(index)
-
-        let outputStruct = try callDriver(&inputStruct)
-
-        return outputStruct.key
-    }
-
-    /// Read data of a key
-    public static func readData(_ key: SMCKey) throws -> SMCBytes {
-        var inputStruct = SMCParamStruct()
-
-        inputStruct.key = key.code
-        inputStruct.keyInfo.dataSize = UInt32(key.info.size)
-        inputStruct.data8 = SMCParamStruct.Selector.kSMCReadKey.rawValue
-
-        let outputStruct = try callDriver(&inputStruct)
-
-        return outputStruct.bytes
-    }
-
-    /// Write data for a key
-    public static func writeData(_ key: SMCKey, data: SMCBytes) throws {
-        var inputStruct = SMCParamStruct()
-
-        inputStruct.key = key.code
-        inputStruct.bytes = data
-        inputStruct.keyInfo.dataSize = UInt32(key.info.size)
-        inputStruct.data8 = SMCParamStruct.Selector.kSMCWriteKey.rawValue
-
-        try callDriver(&inputStruct)
-    }
-
-    /// Make an actual call to the SMC driver
-    public static func callDriver(_ inputStruct: inout SMCParamStruct,
-                        selector: SMCParamStruct.Selector = .kSMCHandleYPCEvent)
-                                                      throws -> SMCParamStruct {
-        assert(MemoryLayout<SMCParamStruct>.stride == 80, "SMCParamStruct size is != 80")
-
-        var outputStruct = SMCParamStruct()
-        let inputStructSize = MemoryLayout<SMCParamStruct>.stride
-        var outputStructSize = MemoryLayout<SMCParamStruct>.stride
-
-        let result = IOConnectCallStructMethod(SMCKit.connection,
-                                               UInt32(selector.rawValue),
-                                               &inputStruct,
-                                               inputStructSize,
-                                               &outputStruct,
-                                               &outputStructSize)
-
-        switch (result, outputStruct.result) {
-        case (kIOReturnSuccess, SMCParamStruct.Result.kSMCSuccess.rawValue):
-            return outputStruct
-        case (kIOReturnSuccess, SMCParamStruct.Result.kSMCKeyNotFound.rawValue):
-            throw SMCError.keyNotFound(code: inputStruct.key.toString())
-        case (kIOReturnNotPrivileged, _):
-            throw SMCError.notPrivileged
-        default:
-            throw SMCError.unknown(kIOReturn: result,
-                                SMCResult: outputStruct.result)
-        }
-    }
-}
-
 //------------------------------------------------------------------------------
 // MARK: General
 //------------------------------------------------------------------------------
@@ -800,3 +665,142 @@ extension SMCKit {
                            isCharging: isCharging)
     }
 }
+
+/// Apple System Management Controller (SMC) user-space client for Intel-based
+/// Macs. Works by talking to the AppleSMC.kext (kernel extension), the closed
+/// source driver for the SMC.
+
+//dlouven -> convert this to class for use in objective c
+@objc(SMCKit)
+public class SMCKit : NSObject{
+    
+    public enum SMCError: Error {
+        
+        /// AppleSMC driver not found
+        case driverNotFound
+        
+        /// Failed to open a connection to the AppleSMC driver
+        case failedToOpen
+        
+        /// This SMC key is not valid on this machine
+        case keyNotFound(code: String)
+        
+        /// Requires root privileges
+        case notPrivileged
+        
+        /// Fan speed must be > 0 && <= fanMaxSpeed
+        case unsafeFanSpeed
+        
+        /// https://developer.apple.com/library/mac/qa/qa1075/_index.html
+        ///
+        /// - parameter kIOReturn: I/O Kit error code
+        /// - parameter SMCResult: SMC specific return code
+        case unknown(kIOReturn: kern_return_t, SMCResult: UInt8)
+    }
+    
+    /// Connection to the SMC driver
+    fileprivate static var connection: io_connect_t = 0
+    
+    /// Open connection to the SMC driver. This must be done first before any
+    /// other calls
+    public static func open() throws {
+        let service = IOServiceGetMatchingService(kIOMasterPortDefault,
+                                                  IOServiceMatching("AppleSMC"))
+        
+        if service == 0 { throw SMCError.driverNotFound }
+        
+        let result = IOServiceOpen(service, mach_task_self_, 0,
+                                   &SMCKit.connection)
+        IOObjectRelease(service)
+        
+        if result != kIOReturnSuccess { throw SMCError.failedToOpen }
+    }
+    
+    /// Close connection to the SMC driver
+    public static func close() -> Bool {
+        let result = IOServiceClose(SMCKit.connection)
+        return result == kIOReturnSuccess ? true : false
+    }
+    
+    /// Get information about a key
+    public static func keyInformation(_ key: FourCharCode) throws -> DataType {
+        var inputStruct = SMCParamStruct()
+        
+        inputStruct.key = key
+        inputStruct.data8 = SMCParamStruct.Selector.kSMCGetKeyInfo.rawValue
+        
+        let outputStruct = try callDriver(&inputStruct)
+        
+        return DataType(type: outputStruct.keyInfo.dataType,
+                        size: outputStruct.keyInfo.dataSize)
+    }
+    
+    /// Get information about the key at index
+    public static func keyInformationAtIndex(_ index: Int) throws ->
+        FourCharCode {
+            var inputStruct = SMCParamStruct()
+            
+            inputStruct.data8 = SMCParamStruct.Selector.kSMCGetKeyFromIndex.rawValue
+            inputStruct.data32 = UInt32(index)
+            
+            let outputStruct = try callDriver(&inputStruct)
+            
+            return outputStruct.key
+    }
+    
+    /// Read data of a key
+    public static func readData(_ key: SMCKey) throws -> SMCBytes {
+        var inputStruct = SMCParamStruct()
+        
+        inputStruct.key = key.code
+        inputStruct.keyInfo.dataSize = UInt32(key.info.size)
+        inputStruct.data8 = SMCParamStruct.Selector.kSMCReadKey.rawValue
+        
+        let outputStruct = try callDriver(&inputStruct)
+        
+        return outputStruct.bytes
+    }
+    
+    /// Write data for a key
+    public static func writeData(_ key: SMCKey, data: SMCBytes) throws {
+        var inputStruct = SMCParamStruct()
+        
+        inputStruct.key = key.code
+        inputStruct.bytes = data
+        inputStruct.keyInfo.dataSize = UInt32(key.info.size)
+        inputStruct.data8 = SMCParamStruct.Selector.kSMCWriteKey.rawValue
+        
+        try callDriver(&inputStruct)
+    }
+    
+    /// Make an actual call to the SMC driver
+    public static func callDriver(_ inputStruct: inout SMCParamStruct,
+                                  selector: SMCParamStruct.Selector = .kSMCHandleYPCEvent)
+        throws -> SMCParamStruct {
+            assert(MemoryLayout<SMCParamStruct>.stride == 80, "SMCParamStruct size is != 80")
+            
+            var outputStruct = SMCParamStruct()
+            let inputStructSize = MemoryLayout<SMCParamStruct>.stride
+            var outputStructSize = MemoryLayout<SMCParamStruct>.stride
+            
+            let result = IOConnectCallStructMethod(SMCKit.connection,
+                                                   UInt32(selector.rawValue),
+                                                   &inputStruct,
+                                                   inputStructSize,
+                                                   &outputStruct,
+                                                   &outputStructSize)
+            
+            switch (result, outputStruct.result) {
+            case (kIOReturnSuccess, SMCParamStruct.Result.kSMCSuccess.rawValue):
+                return outputStruct
+            case (kIOReturnSuccess, SMCParamStruct.Result.kSMCKeyNotFound.rawValue):
+                throw SMCError.keyNotFound(code: inputStruct.key.toString())
+            case (kIOReturnNotPrivileged, _):
+                throw SMCError.notPrivileged
+            default:
+                throw SMCError.unknown(kIOReturn: result,
+                                       SMCResult: outputStruct.result)
+            }
+    }
+}
+
