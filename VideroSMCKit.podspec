@@ -56,7 +56,7 @@ Pod::Spec.new do |s|
   s.author             = { "Dominik Louven" => "dlouven@videro.com" }
   # Or just: s.author    = "Dominik Louven"
   # s.authors            = { "Dominik Louven" => "dlouven@videro.com" }
-  # s.social_media_url   = "http://twitter.com/Dominik Louven"
+  s.social_media_url   = "http://twitter.com/_Graphicscore_"
 
   # ――― Platform Specifics ――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #
@@ -64,12 +64,12 @@ Pod::Spec.new do |s|
   #  the deployment target. You can optionally include the target after the platform.
   #
 
-  # s.platform     = :ios
+  s.platform     = :osx
   # s.platform     = :ios, "5.0"
 
   #  When using multiple platforms
   # s.ios.deployment_target = "5.0"
-  # s.osx.deployment_target = "10.7"
+   s.osx.deployment_target = "10.9"
   # s.watchos.deployment_target = "2.0"
   # s.tvos.deployment_target = "9.0"
 
@@ -80,7 +80,7 @@ Pod::Spec.new do |s|
   #  Supports git, hg, bzr, svn and HTTP.
   #
 
-  s.source       = { :git => "https://github.com/videro/SMCKit.git", :tag => "master" }
+  s.source       = { :git => "https://github.com/videro/SMCKit.git", :tag => "pod" }
 
 
   # ――― Source Code ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
