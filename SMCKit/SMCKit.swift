@@ -45,7 +45,7 @@ public class SMCKit : NSObject{
     
     /// Open connection to the SMC driver. This must be done first before any
     /// other calls
-    public func open() throws {
+    public func open() {
         let service = IOServiceGetMatchingService(kIOMasterPortDefault,
                                                   IOServiceMatching("AppleSMC"))
         
