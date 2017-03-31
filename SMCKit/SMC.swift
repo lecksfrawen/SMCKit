@@ -292,7 +292,7 @@ public func ==(lhs: DataType, rhs: DataType) -> Bool {
 /// * https://github.com/jedda/OSX-Monitoring-Tools
 /// * http://www.opensource.apple.com/source/net_snmp/
 /// * http://www.parhelia.ch/blog/statics/k3_keys.html
-public struct TemperatureSensors {
+public class TemperatureSensors {
 
     public static let AMBIENT_AIR_0 = TemperatureSensor(name: "AMBIENT_AIR_0",
                                    code: FourCharCode(fromStaticString: "TA0P"))
@@ -395,9 +395,15 @@ public struct TemperatureSensors {
                              THUNDERBOLT_1.code : THUNDERBOLT_1]
 }
 
-public struct TemperatureSensor {
+@objc
+public class TemperatureSensor : NSObject{
     public let name: String
     public let code: FourCharCode
+    
+    init(name: String, code: FourCharCode){
+        self.name = name
+        self.code = code
+    }
 }
 
 public enum TemperatureUnit {

@@ -65,40 +65,40 @@ public class SMCKit : NSObject{
     }
     
     /// Get information about a key
-    public func keyInformation(_ key: FourCharCode) throws -> DataType {
+    public func keyInformation(_ key: FourCharCode) -> DataType {
         var inputStruct = SMCParamStruct()
         
         inputStruct.key = key
         inputStruct.data8 = SMCParamStruct.Selector.kSMCGetKeyInfo.rawValue
         
-        let outputStruct = try callDriver(&inputStruct)
+        let outputStruct = callDriver(&inputStruct)
         
         return DataType(type: outputStruct.keyInfo.dataType,
                         size: outputStruct.keyInfo.dataSize)
     }
     
     /// Get information about the key at index
-    public func keyInformationAtIndex(_ index: Int) throws ->
+    public func keyInformationAtIndex(_ index: Int) ->
         FourCharCode {
             var inputStruct = SMCParamStruct()
             
             inputStruct.data8 = SMCParamStruct.Selector.kSMCGetKeyFromIndex.rawValue
             inputStruct.data32 = UInt32(index)
             
-            let outputStruct = try callDriver(&inputStruct)
+            let outputStruct = callDriver(&inputStruct)
             
             return outputStruct.key
     }
     
     /// Read data of a key
-    public func readData(_ key: SMCKey) throws -> SMCBytes {
+    public func readData(_ key: SMCKey) -> SMCBytes {
         var inputStruct = SMCParamStruct()
         
         inputStruct.key = key.code
         inputStruct.keyInfo.dataSize = UInt32(key.info.size)
         inputStruct.data8 = SMCParamStruct.Selector.kSMCReadKey.rawValue
         
-        let outputStruct = try callDriver(&inputStruct)
+        let outputStruct = callDriver(&inputStruct)
         
         return outputStruct.bytes
     }
@@ -117,8 +117,7 @@ public class SMCKit : NSObject{
     
     /// Make an actual call to the SMC driver
     public func callDriver(_ inputStruct: inout SMCParamStruct,
-                                  selector: SMCParamStruct.Selector = .kSMCHandleYPCEvent)
-        throws -> SMCParamStruct {
+                                  selector: SMCParamStruct.Selector = .kSMCHandleYPCEvent) -> SMCParamStruct {
             assert(MemoryLayout<SMCParamStruct>.stride == 80, "SMCParamStruct size is != 80")
             
             var outputStruct = SMCParamStruct()
@@ -147,13 +146,13 @@ public class SMCKit : NSObject{
     }
     
     /// Get all valid SMC keys for this machine
-    public func allKeys() throws -> [SMCKey] {
-        let count = try keyCount()
+    public func allKeys() -> [SMCKey] {
+        let count = keyCount()
         var keys = [SMCKey]()
         
         for i in 0 ..< count {
-            let key = try keyInformationAtIndex(i)
-            let info = try keyInformation(key)
+            let key = keyInformationAtIndex(i)
+            let info = keyInformation(key)
             keys.append(SMCKey(code: key, info: info))
         }
         
@@ -161,11 +160,11 @@ public class SMCKit : NSObject{
     }
     
     /// Get the number of valid SMC keys for this machine
-    public func keyCount() throws -> Int {
+    public func keyCount() -> Int {
         let key = SMCKey(code: FourCharCode(fromStaticString: "#KEY"),
                          info: DataTypes.UInt32)
         
-        let data = try readData(key)
+        let data = readData(key)
         return Int(UInt32(fromBytes: (data.0, data.1, data.2, data.3)))
     }
     
@@ -189,8 +188,8 @@ public class SMCKit : NSObject{
             return sensors
     }
     
-    public func allUnknownTemperatureSensors() throws -> [TemperatureSensor] {
-        let keys = try allKeys()
+    public func allUnknownTemperatureSensors() -> [TemperatureSensor] {
+        let keys = allKeys()
         
         return keys.filter { $0.code.toString().hasPrefix("T") &&
             $0.info == DataTypes.SP78 &&
