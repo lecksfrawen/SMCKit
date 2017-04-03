@@ -8,7 +8,8 @@
 
 import Foundation
 
-public class SMCKit {
+@objc
+public class SMCKit : NSObject{
     /// Get all valid SMC keys for this machine
     public  func allKeys() throws -> [SMCKey] {
         let count = try keyCount()
