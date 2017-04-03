@@ -46,8 +46,7 @@ public struct SMCParamStruct{
         case kSMCKeyNotFound = 132
     }
     
-    @objc
-    public class SMCVersion : NSObject{
+    public struct SMCVersion{
         var major: CUnsignedChar = 0
         var minor: CUnsignedChar = 0
         var build: CUnsignedChar = 0
@@ -55,8 +54,7 @@ public struct SMCParamStruct{
         var _release: CUnsignedShort = 0
     }
     
-    @objc
-    public class SMCPLimitData : NSObject{
+    public struct SMCPLimitData{
         var version: UInt16 = 0
         var length: UInt16 = 0
         var cpuPLimit: UInt32 = 0
@@ -64,7 +62,7 @@ public struct SMCParamStruct{
         var memPLimit: UInt32 = 0
     }
     
-    public class SMCKeyInfoData {
+    public struct SMCKeyInfoData {
         /// How many bytes written to SMCParamStruct.bytes
         var dataSize: IOByteCount = 0
         
