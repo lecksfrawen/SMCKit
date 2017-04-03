@@ -28,7 +28,7 @@ import Foundation
 /// * C array's are bridged as tuples
 ///
 /// http://www.opensource.apple.com/source/PowerManagement/PowerManagement-211/
-public struct SMCParamStruct : NSObject{
+public struct SMCParamStruct{
     
     /// I/O Kit function selector
     public enum Selector: UInt8 {
