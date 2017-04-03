@@ -191,9 +191,10 @@ public class SMCKit : NSObject{
             .map { TemperatureSensor(name: "Unknown", code: $0.code) }
     }
     
-    public func temperatureBySensor(sensor: TemperatureSensor) throws -> Double {
+    //Don't even dare to ask why the f*cking f*uck this has to be an NSNumber
+    public func temperatureBySensor(sensor: TemperatureSensor) throws -> NSNumber {
         let temp = try temperature(sensor.code)
-        return temp
+        return NSNumber(value: temp)
     }
     
     
