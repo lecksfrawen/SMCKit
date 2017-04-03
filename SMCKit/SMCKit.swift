@@ -230,7 +230,7 @@ public class SMCKit : NSObject{
         let name = try fanName(id)
         let minSpeed = try fanMinSpeed(id)
         let maxSpeed = try fanMaxSpeed(id)
-        return Fan(id: id, name: name, minSpeed: minSpeed, maxSpeed: maxSpeed)
+        return Fan(id: id, name: name, minSpeed: minSpeed as Int, maxSpeed: maxSpeed as Int)
     }
     
     /// Number of fans this machine has. All Intel based Macs, except for the
@@ -269,28 +269,28 @@ public class SMCKit : NSObject{
         return name.trimmingCharacters(in: characterSet)
     }
     
-    public  func fanCurrentSpeed(_ id: Int) throws -> Int {
+    public  func fanCurrentSpeed(_ id: Int) throws -> NSNumber {
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)Ac"),
                          info: DataTypes.FPE2)
         
         let data = try readData(key)
-        return Int(fromFPE2: (data.0, data.1))
+        return NSNumber(value: Int(fromFPE2: (data.0, data.1)))
     }
     
-    public  func fanMinSpeed(_ id: Int) throws -> Int {
+    public  func fanMinSpeed(_ id: Int) throws -> NSNumber {
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mn"),
                          info: DataTypes.FPE2)
         
         let data = try readData(key)
-        return Int(fromFPE2: (data.0, data.1))
+        return NSNumber(value: Int(fromFPE2: (data.0, data.1)))
     }
     
-    public  func fanMaxSpeed(_ id: Int) throws -> Int {
+    public  func fanMaxSpeed(_ id: Int) throws -> NSNumber {
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mx"),
                          info: DataTypes.FPE2)
         
         let data = try readData(key)
-        return Int(fromFPE2: (data.0, data.1))
+        return NSNumber(value: Int(fromFPE2: (data.0, data.1)))
     }
     
     /// Requires root privileges. By minimum we mean that OS X can interject and
@@ -301,7 +301,7 @@ public class SMCKit : NSObject{
     /// - Throws: Of note, `SMCKit.SMCError`'s `UnsafeFanSpeed` and `NotPrivileged`
     public  func fanSetMinSpeed(_ id: Int, speed: Int) throws {
         let maxSpeed = try fanMaxSpeed(id)
-        if speed <= 0 || speed > maxSpeed { throw SMCError.unsafeFanSpeed }
+        if speed <= 0 || speed as Int > maxSpeed as Int { throw SMCError.unsafeFanSpeed }
         
         let data = speed.toFPE2()
         let bytes = (data.0, data.1, UInt8(0), UInt8(0), UInt8(0), UInt8(0),
