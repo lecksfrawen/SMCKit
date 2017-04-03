@@ -191,6 +191,12 @@ public class SMCKit : NSObject{
             .map { TemperatureSensor(name: "Unknown", code: $0.code) }
     }
     
+    public func temperatureBySensor(sensor: TemperatureSensor) throws -> Double {
+        let temp = try temperature(sensor.code)
+        return temp
+    }
+    
+    
     /// Get current temperature of a sensor
     public  func temperature(_ sensorCode: FourCharCode,
                              unit: TemperatureUnit = .celius) throws -> Double {
