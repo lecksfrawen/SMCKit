@@ -96,7 +96,7 @@ public struct SMCParamStruct{
     var data32: UInt32 = 0
     
     /// Data returned from the SMC
-    var bytes = (UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+    var bytes = SMCBytes(UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
                  UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
                  UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
                  UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),

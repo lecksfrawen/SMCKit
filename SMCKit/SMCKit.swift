@@ -304,7 +304,7 @@ public class SMCKit : NSObject{
         if speed <= 0 || speed as Int > maxSpeed as Int { throw SMCError.unsafeFanSpeed }
         
         let data = speed.toFPE2()
-        let bytes = (data.0, data.1, UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+        let bytes = SMCBytes(data.0, data.1, UInt8(0), UInt8(0), UInt8(0), UInt8(0),
                      UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
                      UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
                      UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
