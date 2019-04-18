@@ -230,7 +230,7 @@ public class SMCKit : NSObject{
         let name = try fanName(id)
         let minSpeed = try fanMinSpeed(id)
         let maxSpeed = try fanMaxSpeed(id)
-        return Fan(id: id, name: name, minSpeed: minSpeed as Int, maxSpeed: maxSpeed as Int)
+        return Fan(id: id, name: name, minSpeed: minSpeed as! Int, maxSpeed: maxSpeed as! Int)
     }
     
     /// Number of fans this machine has. All Intel based Macs, except for the
@@ -301,7 +301,7 @@ public class SMCKit : NSObject{
     /// - Throws: Of note, `SMCKit.SMCError`'s `UnsafeFanSpeed` and `NotPrivileged`
     public  func fanSetMinSpeed(_ id: Int, speed: Int) throws {
         let maxSpeed = try fanMaxSpeed(id)
-        if speed <= 0 || speed as Int > maxSpeed as Int { throw SMCError.unsafeFanSpeed }
+        if speed <= 0 || speed as Int > maxSpeed as! Int { throw SMCError.unsafeFanSpeed }
         
         let data = speed.toFPE2()
         let bytes = SMCBytes(data.0, data.1, UInt8(0), UInt8(0), UInt8(0), UInt8(0),

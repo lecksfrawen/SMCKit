@@ -177,7 +177,7 @@
 					};
 					4CE5668A1A00A48800787F6B = {
 						CreatedOnToolsVersion = 6.1;
-						LastSwiftMigration = 0810;
+						LastSwiftMigration = 1010;
 					};
 				};
 			};
@@ -365,7 +365,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 3.0.1;
+				SWIFT_SWIFT3_OBJC_INFERENCE = On;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
 		};
@@ -385,7 +386,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "beltex.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 3.0.1;
+				SWIFT_SWIFT3_OBJC_INFERENCE = On;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Release;
 		};
