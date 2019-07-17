@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "VideroSMCKit"
-  s.version      = "1.2.0"
+  s.version      = "1.3.0"
   s.summary      = "VideroSMCKit."
 
   # This description is used to generate tags and improve search results.
@@ -69,10 +69,10 @@ Pod::Spec.new do |s|
 
   #  When using multiple platforms
   # s.ios.deployment_target = "5.0"
-   s.osx.deployment_target = "10.9"
+   s.osx.deployment_target = "10.12"
   # s.watchos.deployment_target = "2.0"
   # s.tvos.deployment_target = "9.0"
-  s.swift_version = "3.0"
+  s.swift_version = "4.2"
 
   # ――― Source Location ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #
