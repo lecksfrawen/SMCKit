@@ -71,6 +71,7 @@ public class SMCKit : NSObject{
     
     /// Open connection to the SMC driver. This must be done first before any
     /// other calls
+    @objc
     public  func open() throws {
         let service = IOServiceGetMatchingService(kIOMasterPortDefault,
                                                   IOServiceMatching("AppleSMC"))
@@ -85,6 +86,7 @@ public class SMCKit : NSObject{
     }
     
     /// Close connection to the SMC driver
+    @objc
     public  func close() -> Bool {
         let result = IOServiceClose(connection)
         return result == kIOReturnSuccess ? true : false
@@ -171,6 +173,7 @@ public class SMCKit : NSObject{
             }
     }
     
+    @objc
     public  func allKnownTemperatureSensors() throws ->
         [TemperatureSensor] {
             var sensors = [TemperatureSensor]()
@@ -192,6 +195,7 @@ public class SMCKit : NSObject{
     }
     
     //Don't even dare to ask why the f*cking f*uck this has to be an NSNumber
+    @objc
     public func temperatureBySensor(sensor: TemperatureSensor) throws -> NSNumber {
         let temp = try temperature(sensor.code)
         return NSNumber(value: temp)
@@ -215,6 +219,7 @@ public class SMCKit : NSObject{
         }
     }
     
+    @objc
     public  func allFans() throws -> [Fan] {
         let count = try fanCount()
         var fans = [Fan]()
@@ -269,6 +274,7 @@ public class SMCKit : NSObject{
         return name.trimmingCharacters(in: characterSet)
     }
     
+    @objc
     public  func fanCurrentSpeed(_ id: Int) throws -> NSNumber {
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)Ac"),
                          info: DataTypes.FPE2)

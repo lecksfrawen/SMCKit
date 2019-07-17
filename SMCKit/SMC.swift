@@ -303,7 +303,7 @@ public class TemperatureSensors : NSObject{
 
 @objc
 public class TemperatureSensor : NSObject{
-    public let name: String
+    @objc public let name: String
     public let code: FourCharCode
     
     init(name: String, code: FourCharCode){
@@ -334,10 +334,10 @@ public enum TemperatureUnit {
 @objc
 public class Fan : NSObject{
     // TODO: Should we start the fan id from 1 instead of 0?
-    public var id: Int
-    public var name: String
-    public var minSpeed: Int
-    public var maxSpeed: Int
+    @objc public var id: Int
+    @objc public var name: String
+    @objc public var minSpeed: Int
+    @objc public var maxSpeed: Int
     
     init(id: Int, name: String, minSpeed: Int, maxSpeed: Int){
         self.name = name
