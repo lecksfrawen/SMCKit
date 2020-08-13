@@ -378,7 +378,7 @@ public struct SMCKit {
         inputStruct.keyInfo.dataSize = UInt32(key.info.size)
         inputStruct.data8 = SMCParamStruct.Selector.kSMCWriteKey.rawValue
 
-        try callDriver(&inputStruct)
+        let _ = try callDriver(&inputStruct)
     }
 
     /// Make an actual call to the SMC driver
@@ -444,7 +444,7 @@ extension SMCKit {
     /// Is this key valid on this machine?
     public static func isKeyFound(_ code: FourCharCode) throws -> Bool {
         do {
-            try keyInformation(code)
+            let _ = try keyInformation(code)
         } catch SMCError.keyNotFound { return false }
 
         return true
