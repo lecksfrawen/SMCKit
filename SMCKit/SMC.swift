@@ -4,7 +4,10 @@
 //
 // The MIT License
 //
-// Copyright (C) 2014-2015  beltex <http://beltex.github.io>
+// Copyright (C) 2014-2017  beltex <https://beltex.github.io>
+//
+// Updated to work with T2 MacBooks using code from
+// https://github.com/beltex/SMCKit/pull/39/commits/af7620ecf27a6920f475ce98fe3ce4a32e825cc2
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +39,9 @@ import Foundation
 /// Floating point, unsigned, 14 bits exponent, 2 bits fraction
 public typealias FPE2 = (UInt8, UInt8)
 
+/// Floating point data type for the 2018 Macbooks using the T2 chip
+public typealias FLT = (UInt8, UInt8, UInt8, UInt8)
+
 /// Floating point, signed, 7 bits exponent, 8 bits fraction
 public typealias SP78 = (UInt8, UInt8)
 
@@ -52,10 +58,15 @@ public typealias SMCBytes = (UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
 extension UInt32 {
 
     init(fromBytes bytes: (UInt8, UInt8, UInt8, UInt8)) {
-        self = UInt32(bytes.0) << 24 |
-               UInt32(bytes.1) << 16 |
-               UInt32(bytes.2) << 8  |
-               UInt32(bytes.3)
+        // TODO: Broken up due to "Expression was too complex" error as of
+        //       Swift 4.
+
+        let byte0 = UInt32(bytes.0) << 24
+        let byte1 = UInt32(bytes.1) << 16
+        let byte2 = UInt32(bytes.2) << 8
+        let byte3 = UInt32(bytes.3)
+
+        self = byte0 | byte1 | byte2 | byte3
     }
 }
 
@@ -71,6 +82,14 @@ public extension Int {
     init(fromFPE2 bytes: FPE2) {
         self = (Int(bytes.0) << 6) + (Int(bytes.1) >> 2)
     }
+    
+    init(fromFLT bytes: FLT) {
+        // convert the SMCBytes to a float value
+        let byteArray: Array<UInt8> = [bytes.0, bytes.1, bytes.2, bytes.3]
+        var resultValue: Float = 0.0
+        memcpy(&resultValue, byteArray, 4)
+        self = Int(resultValue)
+    }
 
     func toFPE2() -> FPE2 {
         return (UInt8(self >> 6), UInt8((self << 2) ^ ((self >> 6) << 8)))
@@ -83,6 +102,14 @@ extension Double {
         // FIXME: Handle second byte
         let sign = bytes.0 & 0x80 == 0 ? 1.0 : -1.0
         self = sign * Double(bytes.0 & 0x7F)    // AND to mask sign bit
+    }
+    
+    init(fromFLT bytes: FLT) {
+        // convert the SMCBytes to a float value
+        let byteArray: Array<UInt8> = [bytes.0, bytes.1, bytes.2, bytes.3]
+        var resultValue: Float = 0.0
+        memcpy(&resultValue, byteArray, 4)
+        self = Double(resultValue)
     }
 }
 
@@ -101,13 +128,16 @@ public extension FourCharCode {
     init(fromStaticString str: StaticString) {
         precondition(str.utf8CodeUnitCount == 4)
 
-        self = str.withUTF8Buffer { (buffer) -> UInt32 in
-            // FIXME: Compiler hang, need to break up expression
-            let temp = UInt32(buffer[0]) << 24
-            return temp                    |
-                   UInt32(buffer[1]) << 16 |
-                   UInt32(buffer[2]) << 8  |
-                   UInt32(buffer[3])
+        self = str.withUTF8Buffer { buffer in
+            // TODO: Broken up due to "Expression was too complex" error as of
+            //       Swift 4.
+
+            let byte0 = UInt32(buffer[0]) << 24
+            let byte1 = UInt32(buffer[1]) << 16
+            let byte2 = UInt32(buffer[2]) << 8
+            let byte3 = UInt32(buffer[3])
+
+            return byte0 | byte1 | byte2 | byte3
         }
     }
 
@@ -207,41 +237,17 @@ public struct SMCParamStruct {
     var data32: UInt32 = 0
 
     /// Data returned from the SMC
-    var bytes = SMCBytes(UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                 UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                 UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                 UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                 UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                 UInt8(0), UInt8(0))
+    var bytes: SMCBytes = (UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                           UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                           UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                           UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                           UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                           UInt8(0), UInt8(0))
 }
 
 //------------------------------------------------------------------------------
 // MARK: SMC Client
 //------------------------------------------------------------------------------
-
-/// I/O Kit common error codes - as defined in <IOKit/IOReturn.h>
-///
-/// Swift currently can't import complex macros, thus we have to manually add
-/// them here.
-
-/// Privilege violation
-private let kIOReturnNotPrivileged = iokit_common_err(0x2c1)
-
-/// Based on macro of the same name in <IOKit/IOReturn.h>. Generates the full
-/// 32-bit error code.
-///
-/// - parameter code: The specific I/O Kit error code. Last 14 bits
-private func iokit_common_err(_ code: Int32) -> kern_return_t {
-    // I/O Kit system code is 0x38. First 6 bits of error code. Passed to
-    // err_system() macro as defined in <mach/error.h>
-    let SYS_IOKIT: Int32 = (0x38 & 0x3f) << 26
-
-    // I/O Kit subsystem code is 0. Middle 12 bits of error code. Passed to
-    // err_sub() macro as defined in <mach/error.h>
-    let SUB_IOKIT_COMMON: Int32 = (0 & 0xfff) << 14
-
-    return SYS_IOKIT | SUB_IOKIT_COMMON | code
-}
 
 /// SMC data type information
 public struct DataTypes {
@@ -254,6 +260,8 @@ public struct DataTypes {
     /// See type aliases
     public static let FPE2 =
                  DataType(type: FourCharCode(fromStaticString: "fpe2"), size: 2)
+    public static let FLT =
+                DataType(type: FourCharCode(fromStaticString: "flt "), size: 4)
     /// See type aliases
     public static let SP78 =
                  DataType(type: FourCharCode(fromStaticString: "sp78"), size: 2)
@@ -325,6 +333,7 @@ public struct SMCKit {
     }
 
     /// Close connection to the SMC driver
+    @discardableResult
     public static func close() -> Bool {
         let result = IOServiceClose(SMCKit.connection)
         return result == kIOReturnSuccess ? true : false
@@ -378,7 +387,7 @@ public struct SMCKit {
         inputStruct.keyInfo.dataSize = UInt32(key.info.size)
         inputStruct.data8 = SMCParamStruct.Selector.kSMCWriteKey.rawValue
 
-        let _ = try callDriver(&inputStruct)
+        _ = try callDriver(&inputStruct)
     }
 
     /// Make an actual call to the SMC driver
@@ -444,7 +453,7 @@ extension SMCKit {
     /// Is this key valid on this machine?
     public static func isKeyFound(_ code: FourCharCode) throws -> Bool {
         do {
-            let _ = try keyInformation(code)
+            _ = try keyInformation(code)
         } catch SMCError.keyNotFound { return false }
 
         return true
@@ -473,6 +482,8 @@ public struct TemperatureSensors {
     public static let AMBIENT_AIR_1 = TemperatureSensor(name: "AMBIENT_AIR_1",
                                    code: FourCharCode(fromStaticString: "TA1P"))
     // Via powermetrics(1)
+    public static let CPU_PECI = TemperatureSensor(name: "CPU_PECI",
+                                   code: FourCharCode(fromStaticString: "TCXC"))
     public static let CPU_0_DIE = TemperatureSensor(name: "CPU_0_DIE",
                                    code: FourCharCode(fromStaticString: "TC0F"))
     public static let CPU_0_DIODE = TemperatureSensor(name: "CPU_0_DIODE",
@@ -540,6 +551,7 @@ public struct TemperatureSensors {
 
     public static let all = [AMBIENT_AIR_0.code : AMBIENT_AIR_0,
                              AMBIENT_AIR_1.code : AMBIENT_AIR_1,
+                             CPU_PECI.code : CPU_PECI,
                              CPU_0_DIE.code : CPU_0_DIE,
                              CPU_0_DIODE.code : CPU_0_DIODE,
                              CPU_0_HEATSINK.code : CPU_0_HEATSINK,
@@ -635,7 +647,6 @@ extension SMCKit {
 //------------------------------------------------------------------------------
 
 public struct Fan {
-    // TODO: Should we start the fan id from 1 instead of 0?
     public let id: Int
     public let name: String
     public let minSpeed: Int
@@ -656,7 +667,7 @@ extension SMCKit {
     }
 
     public static func fan(_ id: Int) throws -> Fan {
-        let name = try fanName(id)
+        let name = String(format: "Fan%02d", id)
         let minSpeed = try fanMinSpeed(id)
         let maxSpeed = try fanMaxSpeed(id)
         return Fan(id: id, name: name, minSpeed: minSpeed, maxSpeed: maxSpeed)
@@ -699,27 +710,21 @@ extension SMCKit {
     }
 
     public static func fanCurrentSpeed(_ id: Int) throws -> Int {
-        let key = SMCKey(code: FourCharCode(fromString: "F\(id)Ac"),
-                                            info: DataTypes.FPE2)
-
+        let key = SMCKey(code: FourCharCode(fromString: "F\(id)Ac"), info: DataTypes.FLT)
         let data = try readData(key)
-        return Int(fromFPE2: (data.0, data.1))
+        return Int(fromFLT: (data.0, data.1, data.2, data.3))
     }
 
     public static func fanMinSpeed(_ id: Int) throws -> Int {
-        let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mn"),
-                                            info: DataTypes.FPE2)
-
+        let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mn"), info: DataTypes.FLT)
         let data = try readData(key)
-        return Int(fromFPE2: (data.0, data.1))
+        return Int(fromFLT: (data.0, data.1, data.2, data.3))
     }
 
     public static func fanMaxSpeed(_ id: Int) throws -> Int {
-        let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mx"),
-                                            info: DataTypes.FPE2)
-
+        let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mx"), info: DataTypes.FLT)
         let data = try readData(key)
-        return Int(fromFPE2: (data.0, data.1))
+        return Int(fromFLT: (data.0, data.1, data.2, data.3))
     }
 
     /// Requires root privileges. By minimum we mean that OS X can interject and
@@ -733,12 +738,12 @@ extension SMCKit {
         if speed <= 0 || speed > maxSpeed { throw SMCError.unsafeFanSpeed }
 
         let data = speed.toFPE2()
-        let bytes = SMCBytes(data.0, data.1, UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                     UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                     UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                     UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                     UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
-                     UInt8(0), UInt8(0))
+        let bytes: SMCBytes = (data.0, data.1, UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                               UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                               UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                               UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                               UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0), UInt8(0),
+                               UInt8(0), UInt8(0))
 
         let key = SMCKey(code: FourCharCode(fromString: "F\(id)Mn"),
                          info: DataTypes.FPE2)
