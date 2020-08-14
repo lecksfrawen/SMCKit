@@ -349,7 +349,7 @@ public struct SMCKit {
         let outputStruct = try callDriver(&inputStruct)
 
         return DataType(type: outputStruct.keyInfo.dataType,
-                        size: outputStruct.keyInfo.dataSize)
+                        size: UInt32(outputStruct.keyInfo.dataSize))
     }
 
     /// Get information about the key at index
@@ -370,7 +370,7 @@ public struct SMCKit {
         var inputStruct = SMCParamStruct()
 
         inputStruct.key = key.code
-        inputStruct.keyInfo.dataSize = UInt32(key.info.size)
+        inputStruct.keyInfo.dataSize = IOByteCount(UInt32(key.info.size))
         inputStruct.data8 = SMCParamStruct.Selector.kSMCReadKey.rawValue
 
         let outputStruct = try callDriver(&inputStruct)
@@ -384,7 +384,7 @@ public struct SMCKit {
 
         inputStruct.key = key.code
         inputStruct.bytes = data
-        inputStruct.keyInfo.dataSize = UInt32(key.info.size)
+        inputStruct.keyInfo.dataSize = IOByteCount(UInt32(key.info.size))
         inputStruct.data8 = SMCParamStruct.Selector.kSMCWriteKey.rawValue
 
         _ = try callDriver(&inputStruct)
